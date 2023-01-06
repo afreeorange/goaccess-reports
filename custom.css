@@ -1,0 +1,16 @@
+html,
+body {
+  font-family: "Circular", -apple-system, BlinkMacSystemFont, avenir next,
+    avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto,
+    arial, sans-serif !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: 0px !important;
+  text-transform: capitalize !important;
+}
