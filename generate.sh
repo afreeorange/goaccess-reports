@@ -9,9 +9,10 @@
 # TODO: Check the current month and assume that all prior months have been
 #       generated?
 
+LOGFILE_TYPE="CLOUDFRONT"
 GEO_IP_DB_LOCATION="./geoip/GeoLite2-Country.mmdb"
 REPORTS_LOCATION="./reports"
-LOGFILE_TYPE="CLOUDFRONT"
+WEBSITES_LOCATION="./websites"
 
 # --- Sanity Checks ---
 
@@ -87,13 +88,13 @@ else
 
     # Get the number of unique years we're dealing with. This will only work for
     # CloudFront logs and that's OK for now...
-    YEARS=($(find ./websites/$WEBSITE/logs -type f -iname "*.gz" | sort | xargs basename | cut -d"." -f2 | cut -d"-" -f1 | sort | uniq))
+    YEARS=($(find ./$WEBSITES_LOCATION/$WEBSITE/logs -type f -iname "*.gz" | sort | xargs basename | cut -d"." -f2 | cut -d"-" -f1 | sort | uniq))
 fi
 
 # --- Fetch Raw Logs ---
 
 echo "Fetching logs for $WEBSITE from $BUCKET_FOR_LOGS"
-mkdir -p ./websites/"$WEBSITE"/{db,logs}
+mkdir -p ./"$WEBSITES_LOCATION"/"$WEBSITE"/{db,logs}
 aws s3 sync "s3://$BUCKET_FOR_LOGS/$WEBSITE/" "./websites/$WEBSITE/logs/"
 
 # TODO: Check if there are any logs and exit with a nice message...
@@ -110,7 +111,7 @@ for YEAR in "${YEARS[@]}"; do
     mkdir -p "$REPORTS_LOCATION/$WEBSITE/$YEAR"
     cp -v ./custom.css "$REPORTS_LOCATION/$WEBSITE/$YEAR/"
 
-    find "./websites/$WEBSITE/logs" -type f -iname "*$YEAR*.gz" -exec gunzip -c {} \; |
+    find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*$YEAR*.gz" -exec gunzip -c {} \; |
         goaccess \
             --log-format="$LOGFILE_TYPE" \
             --date-format="$LOGFILE_TYPE" \
@@ -123,9 +124,9 @@ for YEAR in "${YEARS[@]}"; do
             --agent-list \
             --real-os \
             --json-pretty-print \
-            --db-path="./websites/$WEBSITE/db" \
+            --db-path="./$WEBSITES_LOCATION/$WEBSITE/db" \
             --persist \
-            --output="./reports/$WEBSITE/$YEAR/index.html" \
+            --output="./$REPORTS_LOCATION/$WEBSITE/$YEAR/index.html" \
             --html-report-title="$WEBSITE - $YEAR" \
             --html-custom-css="custom.css"
 
@@ -134,14 +135,14 @@ for YEAR in "${YEARS[@]}"; do
         # Just be relatively 'clean' and only generate logs for the month you
         # find. This also SHOULD NOT TOUCH the reports that have been generated
         # before when you generate/sync!
-        LOGS=($(find ./websites/$WEBSITE/logs -type f -iname "*$YEAR-$MONTH*.gz"))
+        LOGS=($(find ./$WEBSITES_LOCATION/$WEBSITE/logs -type f -iname "*$YEAR-$MONTH*.gz"))
         if [[ ${#LOGS[@]} -ne 0 ]]; then
             echo "Generating logs for $YEAR - $MONTH"
             mkdir -p "$REPORTS_LOCATION/$WEBSITE/$YEAR/$MONTH"
             cp -v ./custom.css "$REPORTS_LOCATION/$WEBSITE/$YEAR/$MONTH/"
 
             # Copypasta is OK. Breathe.
-            find "./websites/$WEBSITE/logs" -type f -iname "*$YEAR-$MONTH*.gz" -exec gunzip -c {} \; |
+            find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*$YEAR-$MONTH*.gz" -exec gunzip -c {} \; |
                 goaccess \
                     --log-format="$LOGFILE_TYPE" \
                     --date-format="$LOGFILE_TYPE" \
@@ -153,9 +154,9 @@ for YEAR in "${YEARS[@]}"; do
                     --with-output-resolver \
                     --agent-list \
                     --real-os \
-                    --db-path="./websites/$WEBSITE/db" \
+                    --db-path="./$WEBSITES_LOCATION/$WEBSITE/db" \
                     --persist \
-                    --output="./reports/$WEBSITE/$YEAR/$MONTH/index.html" \
+                    --output="./$REPORTS_LOCATION/$WEBSITE/$YEAR/$MONTH/index.html" \
                     --html-report-title="$WEBSITE - $YEAR - $MONTH" \
                     --html-custom-css="custom.css"
         fi
@@ -167,5 +168,5 @@ done
 # Note that we're not deleting anything here! Keep the old stuff in place! AND
 # TAKE BACKUPS OF THIS BUCKET! What it contains is the 'precipitate' of all the
 # raw logs.
-aws s3 sync "./reports/$WEBSITE/" "s3://$BUCKET_FOR_REPORTS/$WEBSITE/"
+aws s3 sync "./$REPORTS_LOCATION/$WEBSITE/" "s3://$BUCKET_FOR_REPORTS/$WEBSITE/"
 
