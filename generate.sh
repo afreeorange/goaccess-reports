@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# NOTE: YOU MUST HAVE ALL THE AWS ENV VARS DECLARED BEFORE RUNNING THIS!
+
+set -euo pipefail
 
 # TODO: Sliding window problem (in relation to retention policies)? This is
 #       pretty severe... does the presistence of the goaccess database solve
@@ -88,7 +92,7 @@ else
 
     # Get the number of unique years we're dealing with. This will only work for
     # CloudFront logs and that's OK for now...
-    YEARS=($(find ./$WEBSITES_LOCATION/$WEBSITE/logs -type f -iname "*.gz" | sort | xargs basename | cut -d"." -f2 | cut -d"-" -f1 | sort | uniq))
+    YEARS=($(find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*.gz" | sort | xargs basename | cut -d"." -f2 | cut -d"-" -f1 | sort | uniq))
 fi
 
 # --- Fetch Raw Logs ---
@@ -112,7 +116,7 @@ for YEAR in "${YEARS[@]}"; do
     cp -v ./custom.css "$REPORTS_LOCATION/$WEBSITE/$YEAR/"
 
     find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*$YEAR*.gz" -exec gunzip -c {} \; |
-        goaccess \
+        goaccess - \
             --log-format="$LOGFILE_TYPE" \
             --date-format="$LOGFILE_TYPE" \
             --time-format="$LOGFILE_TYPE" \
@@ -135,7 +139,7 @@ for YEAR in "${YEARS[@]}"; do
         # Just be relatively 'clean' and only generate logs for the month you
         # find. This also SHOULD NOT TOUCH the reports that have been generated
         # before when you generate/sync!
-        LOGS=($(find ./$WEBSITES_LOCATION/$WEBSITE/logs -type f -iname "*$YEAR-$MONTH*.gz"))
+        LOGS=($(find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*$YEAR-$MONTH*.gz"))
         if [[ ${#LOGS[@]} -ne 0 ]]; then
             echo "Generating logs for $YEAR - $MONTH"
             mkdir -p "$REPORTS_LOCATION/$WEBSITE/$YEAR/$MONTH"
@@ -143,7 +147,7 @@ for YEAR in "${YEARS[@]}"; do
 
             # Copypasta is OK. Breathe.
             find "./$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*$YEAR-$MONTH*.gz" -exec gunzip -c {} \; |
-                goaccess \
+                goaccess - \
                     --log-format="$LOGFILE_TYPE" \
                     --date-format="$LOGFILE_TYPE" \
                     --time-format="$LOGFILE_TYPE" \
@@ -169,4 +173,3 @@ done
 # TAKE BACKUPS OF THIS BUCKET! What it contains is the 'precipitate' of all the
 # raw logs.
 aws s3 sync "./$REPORTS_LOCATION/$WEBSITE/" "s3://$BUCKET_FOR_REPORTS/$WEBSITE/"
-
