@@ -111,13 +111,7 @@ fi
 # --- Some basic prep ---
 
 mkdir -p "$WEBSITES_LOCATION/$WEBSITE"/{db,logs}
-
-# --- Fetch Raw Logs ---
-
-if [[ $FETCH_LOGS -eq 1 ]]; then
-    echo "Fetching logs for $WEBSITE from $LOGS_BUCKET"
-    aws s3 sync "s3://$LOGS_BUCKET/$WEBSITE/" "./$WEBSITES_LOCATION/$WEBSITE/logs/"
-fi
+mkdir -p "$REPORTS_LOCATION/$WEBSITE"
 
 # --- GoAccess function ---
 
@@ -146,16 +140,21 @@ run_goaccess() {
     --html-custom-css="custom.css"
 }
 
+# --- Fetch Raw Logs ---
+
+if [[ $FETCH_LOGS -eq 1 ]]; then
+    echo "Fetching logs for $WEBSITE from $LOGS_BUCKET"
+    aws s3 sync "s3://$LOGS_BUCKET/$WEBSITE/" "./$WEBSITES_LOCATION/$WEBSITE/logs/"
+    echo "Done"
+fi
+
 # --- Generate Reports ---
 
 mapfile -t YEARS < <(
-    find "$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*.gz" |
-    sort |
-    xargs -r basename |
+    find "$WEBSITES_LOCATION/$WEBSITE/logs" -type f -iname "*.gz" -exec basename {} \; |
     cut -d"." -f2 |
     cut -d"-" -f1 |
-    sort |
-    uniq
+    sort -u
 )
 
 echo "Found years:" "${YEARS[@]}"
@@ -202,5 +201,8 @@ done
 # backups of this reports bucket! What it contains is the 'precipitate' of all
 # the raw logs.
 if [[ $SYNC_LOGS -eq 1 ]]; then
+    echo "Syncing logs to s3://$REPORTS_BUCKET/$WEBSITE/"
     aws s3 sync "$REPORTS_LOCATION/$WEBSITE/" "s3://$REPORTS_BUCKET/$WEBSITE/"
+    echo "Done"
 fi
+
