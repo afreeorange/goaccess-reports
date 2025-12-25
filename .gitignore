@@ -2,5 +2,5 @@
 ._*
 debug.log
 geoip
-reports
-websites
+report*
+website*

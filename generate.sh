@@ -75,7 +75,7 @@ while [[ $# -gt 0 ]]; do
             shift
         ;;
         --delete-logs-if-not-in-bucket)
-            DELETE_LOGS_IF_NOT_IN_BUCKET=0
+            DELETE_LOGS_IF_NOT_IN_BUCKET=1
             shift
         ;;
         *)
@@ -207,9 +207,9 @@ done
 
 # --- Sync Reports ---
 
-# Note that we're not deleting anything here. That's for another process. Take
-# backups of this reports bucket! What it contains is the 'precipitate' of all
-# the raw logs.
+# Note that we're not deleting anything here. Take backups of this reports
+# bucket! What it contains is the 'precipitate' of all the raw logs including
+# those you have already rotated in S3.
 if [[ $SYNC_LOGS -eq 1 ]]; then
     echo "Syncing logs to s3://$REPORTS_BUCKET/$WEBSITE/"
     aws s3 sync "$REPORTS_LOCATION/$WEBSITE/" "s3://$REPORTS_BUCKET/$WEBSITE/"
