@@ -67,7 +67,7 @@ With `aws` and `goaccess` in your `$PATH` (and the GeoIP data in `./geoip`), you
     --website foo.example.com
 ```
 
-Add `--no-fetch-logs` or `--no-sync-logs` to disable automatic fetching and syncing.
+Add `--no-fetch-logs` or `--no-sync-logs` to disable automatic fetching and syncing. Add `--delete-logs-if-not-in-bucket` to remove any local logs that are not in the bucket (I have a 3 month retention policy).
 
 You will need the AWS CLI configured to pull and push to your buckets. Assumed that this is the `default` profile; customize as you see fit.
 

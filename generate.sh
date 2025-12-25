@@ -17,6 +17,7 @@ LOGS_BUCKET=""
 WEBSITE=""
 FETCH_LOGS=1
 SYNC_LOGS=1
+DELETE_LOGS_IF_NOT_IN_BUCKET=0
 LOGFILE_TYPE="CLOUDFRONT"
 GEO_IP_DB_LOCATION="./geoip/GeoLite2-Country.mmdb"
 REPORTS_LOCATION="./reports"
@@ -71,6 +72,10 @@ while [[ $# -gt 0 ]]; do
         ;;
         --no-sync-logs)
             SYNC_LOGS=0
+            shift
+        ;;
+        --delete-logs-if-not-in-bucket)
+            DELETE_LOGS_IF_NOT_IN_BUCKET=0
             shift
         ;;
         *)
@@ -144,7 +149,12 @@ run_goaccess() {
 
 if [[ $FETCH_LOGS -eq 1 ]]; then
     echo "Fetching logs for $WEBSITE from $LOGS_BUCKET"
-    aws s3 sync "s3://$LOGS_BUCKET/$WEBSITE/" "./$WEBSITES_LOCATION/$WEBSITE/logs/"
+
+    if [[ $DELETE_LOGS_IF_NOT_IN_BUCKET -eq 1 ]]; then
+        aws s3 sync "s3://$LOGS_BUCKET/$WEBSITE/" "./$WEBSITES_LOCATION/$WEBSITE/logs/" --delete
+    else
+        aws s3 sync "s3://$LOGS_BUCKET/$WEBSITE/" "./$WEBSITES_LOCATION/$WEBSITE/logs/"
+    fi
     echo "Done"
 fi
 
